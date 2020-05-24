@@ -1,1 +1,2 @@
 setupEck.sh eol=lf 
+deleteEck.sh eol-lf 
