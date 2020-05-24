@@ -1,0 +1,23 @@
+apiVersion: kibana.k8s.elastic.co/v1
+kind: Kibana
+metadata:
+  name: elasticsearch
+spec:
+  version: 7.5.2
+  count: 1
+  elasticsearchRef:
+    name: elasticsearch
+  http:
+    service:
+      spec:
+        type: NodePort
+        ports:
+          - name: https
+            port: 5601
+            targetPort: 5601
+            protocol: TCP
+    tls:
+      selfSignedCertificate:
+        subjectAltNames:
+          - ip: 127.0.0.1
+          - dns: localhost
