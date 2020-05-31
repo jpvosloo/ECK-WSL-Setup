@@ -7,7 +7,7 @@ echo Setup ECK
 echo Download ECK operator
 kubectl apply -f https://download.elastic.co/downloads/eck/1.0.0/all-in-one.yaml
 echo Create Elastic Search container
-kubectl apply -f configElastic.yaml
+kubectl apply -f configelastic.yaml
 echo Create Kibana container
 kubectl apply -f configkibana.yaml
 
@@ -21,10 +21,9 @@ read -p "Press any key to continue ..."
 
 echo Get Elasticsearch password
 ESPASSWRD=$(kubectl get secret elasticsearch-es-elastic-user -o=jsonpath='{.data.elastic}' | base64 -d)
-echo $ESPASSWRD > "ELASTIC-""$HOSTNAME"".SECRET"
 echo $ESPASSWRD
 
-echo "Manually update the filebeat.yaml and metricbeat.yaml file with the password"
+echo "Please manually update the filebeat.yaml and metricbeat.yaml file with the password"
 read -p "Press any key to continue ..."
 
 #echo setup dns debug tools
@@ -32,18 +31,29 @@ read -p "Press any key to continue ..."
 #kubectl exec -ti dnsutils -- sh
 
 
-echo Create filebeat
-kubectl apply -f configFilebeat.yaml
+echo "Create filebeat"
+kubectl apply -f configfilebeat.yaml
 kubectl wait pod --namespace=kube-system --for=condition=ready -l k8s-app=filebeat
 kubectl logs daemonset.apps/filebeat --namespace=kube-system #--follow
 read -p "Press any key to resume ..."
 
-echo Create metricbeat
-kubectl apply -f configMetricbeat.yaml
+
+echo "Install kube-state-metrics if not available."
+echo "WARNING: This will upgrade kube-state-metrics to the latest version and may break your setup if you're running old stuff!"
+read -p "Press any key to resume ..."
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/kube-state-metrics/master/examples/standard/cluster-role-binding.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/kube-state-metrics/master/examples/standard/cluster-role.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/kube-state-metrics/master/examples/standard/deployment.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/kube-state-metrics/master/examples/standard/service-account.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/kube-state-metrics/master/examples/standard/service.yaml
+kubectl wait pod --namespace=kube-system --for=condition=ready -l app.kubernetes.io/name=kube-state-metrics
+
+echo "Create metricbeat"
+kubectl apply -f configmetricbeat.yaml
 kubectl wait pod --namespace=kube-system --for=condition=ready -l k8s-app=metricbeat
 kubectl logs daemonset.apps/metricbeat --namespace=kube-system
 
-echo get all objects
+echo "List all objects: kubectl get all --all-namespaces"
 kubectl get all --all-namespaces
 
 
