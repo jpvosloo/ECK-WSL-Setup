@@ -6,6 +6,7 @@ metadata:
   namespace: kube-system
   labels:
     k8s-app: filebeat
+    app: elasticcloud
 data:
   filebeat.yml: |-
     filebeat.inputs:
@@ -43,6 +44,9 @@ data:
       hosts: ['${ELASTICSEARCH_HOST:elasticsearch}:${ELASTICSEARCH_PORT:9200}']
       username: ${ELASTICSEARCH_USERNAME}
       password: ${ELASTICSEARCH_PASSWORD}
+      protocol: "https"
+      ssl.enabled: true
+      ssl.verification_mode: none
 ---
 apiVersion: apps/v1
 kind: DaemonSet
@@ -51,6 +55,7 @@ metadata:
   namespace: kube-system
   labels:
     k8s-app: filebeat
+    app: elasticcloud
 spec:
   selector:
     matchLabels:
@@ -59,6 +64,7 @@ spec:
     metadata:
       labels:
         k8s-app: filebeat
+        app: elasticcloud
     spec:
       serviceAccountName: filebeat
       terminationGracePeriodSeconds: 30
@@ -79,7 +85,7 @@ spec:
         - name: ELASTICSEARCH_USERNAME
           value: elastic
         - name: ELASTICSEARCH_PASSWORD
-          value: "mnt6ph9dls4lwwxj7674xt7n"
+          value: "8cvrks74xx4zd5bpp8dpxmg5"
         - name: ELASTIC_CLOUD_ID
           value:
         - name: ELASTIC_CLOUD_AUTH
@@ -147,6 +153,7 @@ metadata:
   name: filebeat
   labels:
     k8s-app: filebeat
+    app: elasticcloud
 rules:
 - apiGroups: [""] # "" indicates the core API group
   resources:
@@ -164,4 +171,5 @@ metadata:
   namespace: kube-system
   labels:
     k8s-app: filebeat
+    app: elasticcloud
 ---

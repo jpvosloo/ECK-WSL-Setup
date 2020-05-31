@@ -6,6 +6,7 @@ metadata:
   namespace: kube-system
   labels:
     k8s-app: metricbeat
+    app: elasticcloud
 data:
   metricbeat.yml: |-
     metricbeat.config.modules:
@@ -31,6 +32,9 @@ data:
       hosts: ['${ELASTICSEARCH_HOST:elasticsearch}:${ELASTICSEARCH_PORT:9200}']
       username: ${ELASTICSEARCH_USERNAME}
       password: ${ELASTICSEARCH_PASSWORD}
+      protocol: "https"
+      ssl.enabled: true
+      ssl.verification_mode: none
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -39,6 +43,7 @@ metadata:
   namespace: kube-system
   labels:
     k8s-app: metricbeat
+    app: elasticcloud
 data:
   system.yml: |-
     - module: system
@@ -98,6 +103,7 @@ metadata:
   namespace: kube-system
   labels:
     k8s-app: metricbeat
+    app: elasticcloud
 spec:
   selector:
     matchLabels:
@@ -106,6 +112,7 @@ spec:
     metadata:
       labels:
         k8s-app: metricbeat
+        app: elasticcloud
     spec:
       serviceAccountName: metricbeat
       terminationGracePeriodSeconds: 30
@@ -121,13 +128,13 @@ spec:
         ]
         env:
         - name: ELASTICSEARCH_HOST
-          value: elasticsearch-es-http.default.svc.cluster.local
+          value: HTTPS://elasticsearch-es-http.default.svc.cluster.local
         - name: ELASTICSEARCH_PORT
           value: "9200"
         - name: ELASTICSEARCH_USERNAME
           value: elastic
         - name: ELASTICSEARCH_PASSWORD
-          value: "mnt6ph9dls4lwwxj7674xt7n"
+          value: "8cvrks74xx4zd5bpp8dpxmg5"
         - name: ELASTIC_CLOUD_ID
           value:
         - name: ELASTIC_CLOUD_AUTH
@@ -190,6 +197,7 @@ metadata:
   namespace: kube-system
   labels:
     k8s-app: metricbeat
+    app: elasticcloud
 data:
   metricbeat.yml: |-
     metricbeat.config.modules:
@@ -208,6 +216,9 @@ data:
       hosts: ['${ELASTICSEARCH_HOST:elasticsearch}:${ELASTICSEARCH_PORT:9200}']
       username: ${ELASTICSEARCH_USERNAME}
       password: ${ELASTICSEARCH_PASSWORD}
+      protocol: "https"
+      ssl.enabled: true
+      ssl.verification_mode: none
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -216,6 +227,7 @@ metadata:
   namespace: kube-system
   labels:
     k8s-app: metricbeat
+    app: elasticcloud
 data:
   # This module requires `kube-state-metrics` up and running under `kube-system` namespace
   kubernetes.yml: |-
@@ -242,6 +254,7 @@ metadata:
   namespace: kube-system
   labels:
     k8s-app: metricbeat
+    app: elasticcloud
 spec:
   selector:
     matchLabels:
@@ -250,6 +263,7 @@ spec:
     metadata:
       labels:
         k8s-app: metricbeat
+        app: elasticcloud
     spec:
       serviceAccountName: metricbeat
       hostNetwork: true
@@ -263,13 +277,13 @@ spec:
         ]
         env:
         - name: ELASTICSEARCH_HOST
-          value: elasticsearch-es-http.default.svc.cluster.local
+          value: https://elasticsearch-es-http.default.svc.cluster.local
         - name: ELASTICSEARCH_PORT
           value: "9200"
         - name: ELASTICSEARCH_USERNAME
           value: elastic
         - name: ELASTICSEARCH_PASSWORD
-          value: "mnt6ph9dls4lwwxj7674xt7n"
+          value: "8cvrks74xx4zd5bpp8dpxmg5"
         - name: ELASTIC_CLOUD_ID
           value:
         - name: ELASTIC_CLOUD_AUTH
@@ -323,6 +337,7 @@ metadata:
   name: metricbeat
   labels:
     k8s-app: metricbeat
+    app: elasticcloud
 rules:
 - apiGroups: [""]
   resources:
@@ -354,4 +369,5 @@ metadata:
   namespace: kube-system
   labels:
     k8s-app: metricbeat
+    app: elasticcloud
 ---
