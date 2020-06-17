@@ -14,26 +14,26 @@ data:
       path: ${path.config}/modules.d/*.yml
       # Reload module configs as they change:
       reload.enabled: false
-      
-      setup.kibana.host: "elasticsearch-kb-http.default.svc.cluster.local:5601"
+
+      setup.kibana.host: "192.168.0.206:31710"
       setup.kibana.protocol: "https"
       setup.kibana.ssl.enabled: true
       setup.kibana.ssl.verification_mode: none
       setup.dashboards.enabled: true
-      
+
     # To enable hints based autodiscover uncomment this:
     metricbeat.autodiscover:
       providers:
         - type: kubernetes
           node: ${NODE_NAME}
           hints.enabled: true
-    
+
     processors:
       - add_cloud_metadata:
-    
+
     cloud.id: ${ELASTIC_CLOUD_ID}
     cloud.auth: ${ELASTIC_CLOUD_AUTH}
-    
+
     output.elasticsearch:
       hosts: ['${ELASTICSEARCH_HOST:elasticsearch}:${ELASTICSEARCH_PORT:9200}']
       username: ${ELASTICSEARCH_USERNAME}
@@ -68,7 +68,7 @@ data:
       process.include_top_n:
         by_cpu: 5      # include top 5 processes by CPU
         by_memory: 5   # include top 5 processes by memory
-    
+
     - module: system
       period: 1m
       metricsets:
@@ -134,13 +134,13 @@ spec:
         ]
         env:
         - name: ELASTICSEARCH_HOST
-          value: elasticsearch-es-http.default.svc.cluster.local
+          value: 192.168.0.206
         - name: ELASTICSEARCH_PORT
-          value: "9200"
+          value: "31839"
         - name: ELASTICSEARCH_USERNAME
           value: elastic
         - name: ELASTICSEARCH_PASSWORD
-          value: "8cvrks74xx4zd5bpp8dpxmg5"
+          value: "k5hzhrpx2644r7xvchw6mxcb"
         - name: ELASTIC_CLOUD_ID
           value:
         - name: ELASTIC_CLOUD_AUTH
@@ -211,13 +211,13 @@ data:
       path: ${path.config}/modules.d/*.yml
       # Reload module configs as they change:
       reload.enabled: false
-    
+
     processors:
       - add_cloud_metadata:
-    
+
     cloud.id: ${ELASTIC_CLOUD_ID}
     cloud.auth: ${ELASTIC_CLOUD_AUTH}
-    
+
     output.elasticsearch:
       hosts: ['${ELASTICSEARCH_HOST:elasticsearch}:${ELASTICSEARCH_PORT:9200}']
       username: ${ELASTICSEARCH_USERNAME}
@@ -283,13 +283,13 @@ spec:
         ]
         env:
         - name: ELASTICSEARCH_HOST
-          value: elasticsearch-es-http.default.svc.cluster.local
+          value: 192.168.0.206
         - name: ELASTICSEARCH_PORT
-          value: "9200"
+          value: "31839"
         - name: ELASTICSEARCH_USERNAME
           value: elastic
         - name: ELASTICSEARCH_PASSWORD
-          value: "8cvrks74xx4zd5bpp8dpxmg5"
+          value: "k5hzhrpx2644r7xvchw6mxcb"
         - name: ELASTIC_CLOUD_ID
           value:
         - name: ELASTIC_CLOUD_AUTH

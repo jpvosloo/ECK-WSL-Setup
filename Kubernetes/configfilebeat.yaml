@@ -10,11 +10,11 @@ metadata:
 data:
   filebeat.yml: |-
     setup.dashboards.enabled: true
-    setup.kibana.host: elasticsearch-kb-http.default.svc.cluster.local:5601
+    setup.kibana.host: elasticsearch-kb-http.elastic-system.svc.cluster.local:5601
     setup.kibana.protocol: "https"
     setup.kibana.ssl.enabled: true
     setup.kibana.ssl.verification_mode: none
-    
+
     #filebeat.inputs:
     #- type: container
     #  paths:
@@ -38,14 +38,14 @@ data:
             type: container
             paths:
               - /var/log/containers/*${data.kubernetes.container.id}.log
-    
+
     processors:
       - add_cloud_metadata:
       - add_host_metadata:
-    
+
     cloud.id: ${ELASTIC_CLOUD_ID}
     cloud.auth: ${ELASTIC_CLOUD_AUTH}
-    
+
     output.elasticsearch:
       hosts: ['${ELASTICSEARCH_HOST:elasticsearch}:${ELASTICSEARCH_PORT:9200}']
       username: ${ELASTICSEARCH_USERNAME}
@@ -85,13 +85,13 @@ spec:
         ]
         env:
         - name: ELASTICSEARCH_HOST
-          value: elasticsearch-es-http.default.svc.cluster.local
+          value: elasticsearch-es-http.elastic-system.svc.cluster.local
         - name: ELASTICSEARCH_PORT
           value: "9200"
         - name: ELASTICSEARCH_USERNAME
           value: elastic
         - name: ELASTICSEARCH_PASSWORD
-          value: "8cvrks74xx4zd5bpp8dpxmg5"
+          value: "k5hzhrpx2644r7xvchw6mxcb"
         - name: ELASTIC_CLOUD_ID
           value:
         - name: ELASTIC_CLOUD_AUTH

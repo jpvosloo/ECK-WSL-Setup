@@ -1,0 +1,1 @@
+winlogbeat.exe -c winlogbeat.yml
