@@ -8,11 +8,11 @@ Configure WSL 2 and Docker-Desktop with Kubernetes enabled.
 Clone this git repo\
 Open WSL command line\
 In the Kubernetes subfolder run:
-> bash ./setupelasticcloud.sh  
+> bash ./install-elasticcloud.sh  
 
 ## Uninstall ECK
 This will delete all the ECK kubectl components previously created.
-> bash ./deleteelasticcloud.sh  
+> bash ./uninstall-elasticcloud.sh
 
 
 # Elastic Cloud on WSL 2 for Canonical MicroK8s

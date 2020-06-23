@@ -26,7 +26,14 @@ function main() {
         elevateUAC;
         . .\Install-WSL.ps1;
         . .\Install-UbuntuOnWsl.ps1;
-        #Install Kubernetes
+        #Install Kubernetes, Dependencies:
+        #$wsldistroname="Ubuntu-20.04";
+        #$serverinstallfolder pointing to ubuntu2004.exe for example: $serverinstallfolder=$Env:USERPROFILE + "\.wsl\distro\Ubuntu";
+        if ($host.name -eq 'ConsoleHost') { #commands differ if it's being run in ISE or on console.
+            . wsl.exe -d $wsldistroname -e "/bin/bash" -- "install-microK8sOnUbuntu.sh"
+        } else {
+            . "$serverinstallfolder\Ubuntu2004.exe" run '/bin/bash "install-microK8sOnUbuntu.sh"';
+        }
         #https://www.youtube.com/watch?time_continue=457&v=DmfuJzX6vJQ&feature=emb_logo
         #Install Kubernetes Helm CLI
 
@@ -54,42 +61,6 @@ function setDefaultSettings() {
 }
 
 
-function Get-AppxFileManifest{
-    param($appxPath)
-    if(Test-Path $appxPath){
-        Add-Type -Assembly "System.IO.Compression.FileSystem"
-        $zip = [IO.Compression.ZipFile]::OpenRead($appxPath)
-        $file = $zip.Entries | Where-Object { $_.Name -eq "AppxManifest.xml"}
-        $stream = $file.Open()
-        $reader = New-Object IO.StreamReader($stream)
-        $xml = [XML]$reader.ReadToEnd()
-        $reader.Close()
-        $stream.Close()
-        $zip.Dispose()
-        $xml
-    }
-}
-
-function Start-ProcessSync{
-param($FilePath, $ArgumentList)
-$pinfo = New-Object System.Diagnostics.ProcessStartInfo;
-$pinfo.FileName = $FilePath;
-$pinfo.Arguments = $ArgumentList;
-$pinfo.RedirectStandardError = $true;
-$pinfo.RedirectStandardOutput = $true;
-$pinfo.UseShellExecute = $false;
-$p = New-Object System.Diagnostics.Process;
-$p.StartInfo = $pinfo;
-$p.Start() | Out-Null;
-$p.WaitForExit();
-$stdout = $p.StandardOutput.ReadToEnd();
-$stderr = $p.StandardError.ReadToEnd();
-Write-Host "stdout: $stdout";
-Write-Host "stderr: $stderr";
-Write-Host "exit code: " + $p.ExitCode;
-}
-
-
 function elevateUAC() {
     #Elevate UAC to admin
     echo "Check that the script is running as admin.";
@@ -109,13 +80,6 @@ function elevateUAC() {
 }
 
 
-
-#Register WSL interop module.
-#This only works for powershell core
-#echo "Install WSL Interop powershell module. Please answer yes when asked to confirm this."
-#https://github.com/mikebattista/PowerShell-WSL-Interop
-#Install-Module WslInterop
-#Import-WslCommand "ls"
 
 
 #https://docs.microsoft.com/en-us/windows/wsl/install-on-server

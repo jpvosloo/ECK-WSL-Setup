@@ -1,7 +1,7 @@
 #!/bin/bash
-echo This script will configure ElasticSearch ECK stack Kubernetes.
+echo This script will configure ElasticSearch ECK stack on Kubernetes.
 
-bash ./setupwin10K8sOnWsl2.sh
+bash ./initialize-win10K8sOnWsl2.sh
 
 if not [[ $(kubectl cluster-info | grep "running") ]]; then
 	echo "ERROR: Kubectl CLI is not running!"
