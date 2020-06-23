@@ -8,11 +8,11 @@ Steps\
 Clone this git repo\
 Open WSL command line\
 In the Kubernetes subfolder run:\
-bash ./setupEck.sh  
+bash ./deleteelasticcloud.sh  
 
 DELETE everything\
 This will delete all the ECK kubectl components previously created.\
-bash ./deleteEck.sh  
+bash ./setupelasticcloud.sh  
 
 
 # Elastic Cloud on WSL 2 for Canonical MicroK8s
