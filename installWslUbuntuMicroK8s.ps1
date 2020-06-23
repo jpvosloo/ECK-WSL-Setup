@@ -1,5 +1,57 @@
-Set-StrictMode -Version 'Latest'
-$OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::UTF8;
+#This script install WSL then Ubuntu then MicroK8s.
+#Documentation is provided in Readme.md on Github: 
+
+#Usage example:
+
+#Dependencies
+#This script has a number of sub scripts in this folder that are needed for it to work e.g:
+# Import-Settings_Dev.ps1, Import-Settings_UAT.ps1, Import-Settings_PRD.ps1
+
+
+param (
+    #[Parameter(mandatory = $true)][string] $EnvironmentName
+    [string] $EnvironmentName = "DEV"
+)
+$ErrorActionPreference = "Stop"; #Set this in every script.
+Set-StrictMode -Version 'Latest'; #Set this in every script.
+
+function main() {
+    param (
+        [Parameter(mandatory = $true)][string] $EnvironmentName
+    )
+    Write-Output "Start script: $PSCommandPath";
+    try {
+        . .\Initialize-Settings.ps1; #Paired with Finalize-Settings;
+        #= MAIN FUNCTIONAL CODE START ======================
+        elevateUAC;
+        . .\Install-WSL.ps1;
+        . .\Install-UbuntuOnWsl.ps1;
+        #Install Kubernetes
+        #https://www.youtube.com/watch?time_continue=457&v=DmfuJzX6vJQ&feature=emb_logo
+        #Install Kubernetes Helm CLI
+
+        #= MAIN FUNCTIONAL CODE END ========================
+        Write-Output 'Script completed without error.';
+        exitWithCode 0; #All good, we can exit with success.
+    }
+    catch { 
+        Write-Host "Script failed with error: $_" -ForegroundColor RED;
+        exitWithCode -1; #There was an error, notify upstream process.
+    }
+    finally {
+        try { Finalize-Settings; } catch {} 
+    }
+}
+
+function setDefaultSettings() {
+    #This is called from Initialize-Settings and may be overridden in the Settings_DEV.ps1 Settings_UAT.ps1 and Settings_PRD.ps1 file.
+    setRawSetting 'EnvironmentName' $EnvironmentName;
+    setRawSetting 'ScriptTimestamp' (Get-Date).tostring('yyyyMMdd_hhmmss');
+    setPathSetting 'HomePath' '..';
+    setPathSetting 'LogFile' "..\Temp\" + $(split-path $PSCommandPath -Leaf) + ".log"; #If this change, remember to update the transcript command in Initialize-Settings.
+    setPathSetting 'TempFolder' "$($HomePath)\Temp\Temp$(split-path $PSCommandPath -Leaf)";
+    setPathSetting 'TempFolderBackup' "$($TempFolder)Backup";
+}
 
 
 function Get-AppxFileManifest{
@@ -38,33 +90,25 @@ Write-Host "exit code: " + $p.ExitCode;
 }
 
 
-#Elevate UAC to admin
-echo "Check that the script is running as admin.";
-if (-Not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] 'Administrator')) {
-    if ([int](Get-CimInstance -Class Win32_OperatingSystem | Select-Object -ExpandProperty BuildNumber) -ge 6000) {
+function elevateUAC() {
+    #Elevate UAC to admin
     echo "Check that the script is running as admin.";
-
-    $CommandLine = "-File `"" + $MyInvocation.MyCommand.Path + "`" " + $MyInvocation.UnboundArguments
-    Start-Process -FilePath PowerShell.exe -Verb Runas -ArgumentList $CommandLine
-    Exit
+    pause
+    if (-Not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] 'Administrator')) {
+        if ([int](Get-CimInstance -Class Win32_OperatingSystem | Select-Object -ExpandProperty BuildNumber) -ge 6000) {
+            if ($host.name -eq 'ConsoleHost') {
+                echo "Not running as admin, attempting to request UAC elevation.";
+                $CommandLine = "-File `"" + $PSCommandPath + "`" " + $MyInvocation.UnboundArguments
+                Start-Process -FilePath PowerShell.exe -Verb Runas -ArgumentList $CommandLine
+                Exit
+            } else {        
+                Write-Error "This script must be run as administrator and can only self-elevate UAC when run in a console, not ISE. Please re-try as administrator.";
+            }
+        }
     }
 }
 
 
-#Install WSL 2
-echo "Check if Microsoft-Windows-Subsystem-Linux feature is enabled.";
-if((Get-WindowsOptionalFeature `
-    -FeatureName "Microsoft-Windows-Subsystem-Linux" `
-    -Online).State -ne "Enabled")
-{
-    echo "Enable Microsoft-Windows-Subsystem-Linux feature.";
-    Enable-WindowsOptionalFeature `
-        -FeatureName "Microsoft-Windows-Subsystem-Linux" `
-        -Online `
-        -NoRestart:$False ;
-} else {
-    echo "Microsoft-Windows-Subsystem-Linux feature is enabled.";
-}
 
 #Register WSL interop module.
 #This only works for powershell core
@@ -74,137 +118,11 @@ if((Get-WindowsOptionalFeature `
 #Import-WslCommand "ls"
 
 
-#Install WSL 2 Ubuntu
-$wsldistroname="Ubuntu-20.04";
-echo "Check if $wsldistroname is installed on WSL";
-$isDistroInstalled=$(wsl.exe --list) -contains "$wsldistroname";
-if ($isDistroInstalled) {
-    echo "$wsldistroname is installed on WSL and will be used.";
-} else {
-    $ubuntudownloadurl="https://aka.ms/wslubuntu2004"; #From: https://docs.microsoft.com/en-us/windows/wsl/install-manual
-    echo "Install $wsldistroname on WSL 2 from: $ubuntudownloadurl";
-    $ostype=(Get-CimInstance -ClassName Win32_OperatingSystem).ProductType #Get OS type. 1=workstation,2=domaincontroller,3=server. #Alternative method: (Get-ComputerInfo).OsProductType
-    switch ($ostype)
-    {
-    1 {
-        echo "Working on a desktop OS.";
-        $packagename="*Ubuntu20.04*";
-        $package=Get-AppxPackage -Name $packagename;
-        #$package | Remove-AppxPackage
-        $isAppInstalled=(($package | Measure-Object).Count -gt 0);
-        if ($isAppInstalled) {
-            echo "App is installed and will be used from: $package.InstallLocation";
-            $package=$package[0];
-        } else {
-            echo "Installing app through windows store.";
-            Add-AppxPackage "$ubuntudownloadurl";
-            $package=Get-AppxPackage -Name $packagename; #update the variable for later use.
-        }
-            $packageExename=($package | Get-AppxPackageManifest).package.applications.application.Executable;
-            $packageExe=$package.InstallLocation + '\' + $packageExename;
-            $installCommand=$packageExe + " install --root";
-            
-            echo "Disable compression and encryption on the ??"
-            pushd $package.InstallLocation
-            compact.exe --% /U
-            fsutil.exe --% behavior set disableencryption 1
-
-            echo "Launch the distro setup at: $installCommand";
-            & $packageExe --% install --root
-            #Start-ProcessSync -FilePath $packageExe -ArgumentList "install --root";
-            #$process=Start-Process  -FilePath $packageExe -ArgumentList "install --root"  -PassThru -Wait
-            #$process.ExitCode
-
-            echo "Updating Ubuntu.";
-            pause
-            echo wsl.exe -d $wsldistroname -e 'run sudo apt update && sudo apt upgrade && $SHELL';
-            #Start-Process  -FilePath $packageExe -ArgumentList 'run sudo apt update && sudo apt upgrade && $SHELL';
-
-        }
-    2 {echo "This machine is a Domain Controller, unable to install package automatically.";}
-    3 {
-
-
-if ($installedUbuntu.Count -gt 0) {
-    echo "Ubuntu is already installed and will be used for K8S."
-    pause
-} else {
-    echo "Ubuntu is not yet installed, installing it now."
-    echo "Downloading ubuntu package."
-    $ubuntudownloadurl="https://aka.ms/wslubuntu2004"; #From: https://docs.microsoft.com/en-us/windows/wsl/install-manual
-    $tmpappx="$env:temp\Ubuntu.appx.zip" #use .zip to support extracting it later if needed.
-    Invoke-WebRequest -Uri $ubuntudownloadurl -OutFile $tmpappx -UseBasicParsing
-    switch ($ostype)
-    {
-        1 {
-            echo "Installing package for desktop OS.";
-            Add-AppxPackage "$tmpappx";
-            }
-        2 {echo "This is a Domain Controller, unable to install package.";}
-        3 {
-            echo "Installing package for server OS.";
-            $serverinstallfolder="~\.wsl\distro\Ubuntu";
-            #Rename-Item .\Ubuntu.appx .\Ubuntu.zip
-            #Expand-Archive $tmpappx $tmpappx
-            #Rename the file extension to compressed file extension
-            Rename-Item -Path $tmpappx -NewName "$tmpappx";
-            # Expand the compressed file to destination
-            echo Unzip App: $tmpappx to folder: $serverinstallfolder;
-            Expand-Archive -Path $tmpappx -DestinationPath $serverinstallfolder;
-            # Launch the distro setup
-            Start-Process  -FilePath "$serverinstallfolder\Ubuntu2004.exe" -ArgumentList "install --root";
-            echo "Updating Ubuntu."
-            pause
-            Start-Process  -FilePath "$serverinstallfolder\Ubuntu2004.exe" -ArgumentList 'run sudo apt update && sudo apt upgrade && $SHELL';
-            }
-    }
-}
-
-
-#https://kiazhi.github.io/blog/The-easy-way-to-get-Ubuntu-18.04-distro-environment-on-Windows/
 #https://docs.microsoft.com/en-us/windows/wsl/install-on-server
 #https://microk8s.io/
 #https://ubuntu.com/blog/kubernetes-on-windows-with-microk8s-and-wsl-2
-#https://www.youtube.com/watch?time_continue=457&v=DmfuJzX6vJQ&feature=emb_logo
 
 
-$appname = 'ubuntu';
-
-$apppackage = Get-Package -Name "*$appname*"
-if ($apppackage  -ne $null) {
-    echo "Found installed $appname";
-    if ($apppackage[0].ProviderName = "msi") {
-        echo "Attempting to remove package, please approve admin permissions if requested.";
-        $apppackage[0] | Uninstall-Package -v; #only works for msi and will self-elevate if needed.
-    } else {
-    #elevate UAC
-if (-Not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] 'Administrator')) {
- if ([int](Get-CimInstance -Class Win32_OperatingSystem | Select-Object -ExpandProperty BuildNumber) -ge 6000) {
-  $commandLine = "-Command `"`$(Get-Package '`$($apppackage[0].Name.ToString())').[0].Meta.Attributes['UninstallString']`"";
-
-  Start-Process -FilePath PowerShell.exe -Verb Runas -ArgumentList "-Command `"`$(Get-Package '`$($apppackage[0].Name.ToString())').[0]`"; pause";
-  Start-Process -FilePath PowerShell.exe -Verb Runas -ArgumentList "-Command `"echo $apppackage[0].Name.ToString(); pause`"";
-
-  $commandLine = "";
-  $commandLine += "-Command `"";
-  $commandLine += "`$(";
-  $commandLine += "Get-Package `'$($apppackage[0].Name.ToString())`'";
-  $commandLine += ").[0]";
-  $commandLine += "; pause;";
-  $commandLine += "`"";
-  echo $commandLine;
-  Start-Process -FilePath PowerShell.exe -Verb Runas -NoNewWindow -ArgumentList $commandLine
-  Exit
- }
-}
-
-        $apppackage[0] |% { & $_.Meta.Attributes["UninstallString"]}; #workaround for non msi providers.
-    }
-}
 
 
-#Install Kubernetes
-
-
-#Install Kubernetes Helm CLI
-
+main $EnvironmentName; #When the file is fully loaded, run the main function.
