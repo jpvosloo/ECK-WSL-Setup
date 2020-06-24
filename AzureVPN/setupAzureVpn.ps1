@@ -25,7 +25,7 @@ https://geekdudes.wordpress.com/2019/01/30/creating-site-to-site-vpn-between-str
 #https://docs.microsoft.com/en-us/azure/vpn-gateway/scripts/vpn-gateway-sample-site-to-site-powershell
 # Declare variables
   $VNetName  = "VNet1"
-  $FESubName = "LifeStream"
+  $FESubName = "DesktopK8s"
   $GWSubName = "GatewaySubnet"
   $VNetPrefix1 = "10.0.0.0/16"
   $FESubPrefix = "10.1.0.0/24"
